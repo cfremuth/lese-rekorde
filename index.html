@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lese-Rekorde">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F1F4F9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1120" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Franz' Lese-Rekorde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Lexend:wght@300;400;500;700&display=swap">
+<style>
+/* Layout: one-column training log — header with totals, program switch, week rail, stacked reading cards (timer · karaoke pace · text · times); a floating stop bar while a timer runs */
+:root{
+  --bg:#F1F4F9; --surface:#FFFFFF; --sunk:#E7ECF4; --ink:#121A2C; --muted:#5B6479; --line:#D8DFEB;
+  --accent:#2950D4; --accent-ink:#FFFFFF; --record:#C23F0A; --record-soft:#FCE8DD; --run:#0B8459;
+  --sung:#C23F0A;
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Lexend","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1120; --surface:#141B2C; --sunk:#1B2437; --ink:#E6EAF3; --muted:#9AA4B9; --line:#273149;
+    --accent:#86A2FF; --accent-ink:#0C1120; --record:#FF8C52; --record-soft:#3A2317; --run:#45D29E;
+    --sung:#FF8C52;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1120; --surface:#141B2C; --sunk:#1B2437; --ink:#E6EAF3; --muted:#9AA4B9; --line:#273149;
+  --accent:#86A2FF; --accent-ink:#0C1120; --record:#FF8C52; --record-soft:#3A2317; --run:#45D29E;
+  --sung:#FF8C52;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;font-weight:400}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 140px;display:flex;flex-direction:column;gap:22px}
+
+/* Header */
+.top{display:flex;flex-direction:column;gap:10px}
+.eyebrow{margin:0;font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(2.1rem,6vw,3.1rem);line-height:1;letter-spacing:-.02em;text-wrap:balance}
+h1 .rec{color:var(--record)}
+.lede{margin:0;max-width:64ch;color:var(--muted);font-weight:300}
+.lede b{color:var(--ink);font-weight:500}
+.lede .k{color:var(--sung);font-weight:500}
+.stats{display:flex;flex-wrap:wrap;gap:8px 26px;margin:6px 0 0;padding:0}
+.stats div{display:flex;flex-direction:column}
+.stats dt{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stats dd{margin:0;font-weight:500;font-size:1.15rem;font-variant-numeric:tabular-nums}
+
+/* Program switch + week rail */
+.switch{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--sunk);border-radius:12px;width:fit-content;max-width:100%}
+.switch button{border:0;background:transparent;padding:8px 14px;border-radius:9px;font-weight:500;display:flex;gap:8px;align-items:baseline}
+.switch button span{font-size:.78rem;color:var(--muted);font-weight:400}
+.switch button[aria-selected="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgb(0 0 0 / .12),inset 0 0 0 1px var(--line)}
+.weeks{display:flex;flex-wrap:wrap;gap:8px}
+.week{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;text-align:left;display:grid;grid-template-columns:auto auto;column-gap:10px;align-items:center;min-width:0}
+.week .wl{font-weight:500;font-size:.95rem}
+.week .wl .new{margin-left:6px;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:1px 6px;vertical-align:2px;font-weight:700}
+.week .wt{grid-column:1;font-size:.78rem;color:var(--muted);white-space:nowrap}
+.week .wb{grid-row:1 / span 2;grid-column:2;font-size:.72rem;font-variant-numeric:tabular-nums;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.week .wb.full{color:var(--record);border-color:var(--record);font-weight:700}
+.week[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.week[aria-selected="true"] .wl{color:var(--accent)}
+
+/* Reading card */
+.list{display:flex;flex-direction:column;gap:18px}
+.reading{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.reading.is-running{border-color:var(--run);box-shadow:inset 0 0 0 1px var(--run)}
+.r-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 20px;align-items:flex-start}
+.r-titles{min-width:0;flex:1 1 320px}
+.r-meta{margin:0 0 4px;font-size:.78rem;color:var(--muted);letter-spacing:.02em}
+.r-titles h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:1.45rem;line-height:1.15;text-wrap:balance}
+.r-record{display:flex;flex-direction:column;align-items:flex-end;text-align:right;min-width:120px}
+.r-record .lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.r-record .val{font-size:1.6rem;font-variant-numeric:tabular-nums;font-weight:300;color:var(--muted);line-height:1.15}
+.r-record.has .val{font-weight:700;color:var(--record)}
+.r-record .sub{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.r-record.flash .val{animation:flash 1.4s ease-out}
+@keyframes flash{0%{background:var(--record-soft);transform:scale(1.12)}100%{background:transparent;transform:none}}
+
+.timer{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--sunk);border-radius:12px;padding:14px 16px}
+.clock{font-size:2.5rem;font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-.01em;min-width:5.2ch;line-height:1}
+.is-running .clock{color:var(--run);font-weight:500}
+.go{border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:1.05rem;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;gap:9px}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.go .ic{width:.8em;height:.8em;display:inline-block;background:currentColor;clip-path:polygon(0 0,100% 50%,0 100%)}
+.is-running .go{background:var(--run)}
+.is-running .go .ic{clip-path:none;border-radius:2px}
+.cancel{border:0;background:transparent;color:var(--muted);text-decoration:underline;font-size:.88rem;padding:6px 2px}
+.verdict{flex:1 1 220px;margin:0;font-size:.95rem;min-width:0}
+.verdict:empty{display:none}
+.verdict.v-record{color:var(--record);font-weight:700}
+.verdict.v-first{font-weight:500}
+.verdict.v-near{font-weight:500}
+.verdict.v-info{color:var(--muted)}
+
+/* Karaoke pace */
+.pace{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;border-top:1px solid var(--line);padding-top:12px;font-size:.85rem;color:var(--muted)}
+.pace .pl{font-weight:500;color:var(--ink);margin-right:2px}
+.pace button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:.82rem}
+.pace button[aria-pressed="true"]{border-color:var(--sung);color:var(--sung);font-weight:700}
+.pace button:disabled{opacity:.5;cursor:default}
+.pace .ps{font-variant-numeric:tabular-nums}
+
+details.text{border-top:1px solid var(--line);padding-top:12px}
+details.text summary{cursor:pointer;font-weight:500;color:var(--accent);width:fit-content;list-style:none;display:flex;align-items:center;gap:8px}
+details.text summary::-webkit-details-marker{display:none}
+details.text summary::before{content:"";width:.5em;height:.5em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+details.text[open] summary::before{transform:rotate(45deg)}
+.prose{max-width:65ch;font-size:1.14rem;line-height:1.75;hyphens:auto;margin-top:12px}
+.prose p{margin:0 0 .9em}
+.prose p:last-child{margin-bottom:0}
+.prose strong{font-weight:700}
+.prose .w{transition:color .2s linear}
+.prose .w.sung{color:var(--sung)}
+.prose .w.now{background-image:linear-gradient(90deg,var(--sung) var(--p,0%),var(--ink) var(--p,0%));-webkit-background-clip:text;background-clip:text;color:transparent;transition:none}
+
+.log h4{margin:0 0 8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.log ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.att{display:grid;grid-template-columns:2.6em 8.4em minmax(40px,1fr) 5.6em 9.5em 2.2em;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;font-weight:300;color:var(--muted)}
+.att:first-child{border-top:0}
+.att .n{font-size:.8rem}
+.att .t{font-size:1.08rem;color:var(--ink);white-space:nowrap}
+.att .bar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.att .bar i{display:block;height:100%;background:var(--muted);opacity:.45;border-radius:3px}
+.att .w,.att .d{font-size:.82rem}
+.att .tag{display:none}
+.att.was-record{font-weight:500}
+.att.was-record .t{font-weight:500}
+.att.is-record{font-weight:700;color:var(--record)}
+.att.is-record .t{color:var(--record);font-weight:700}
+.att.is-record .bar i{background:var(--record);opacity:1}
+.att.is-record .tag{display:inline-block;margin-left:6px;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;border:1.5px solid currentColor;border-radius:999px;padding:0 6px;vertical-align:2px}
+.del{border:0;background:transparent;color:var(--muted);font-size:1.1rem;line-height:1;padding:4px;border-radius:6px;justify-self:end;white-space:nowrap}
+.del.confirm{font-size:.74rem;color:var(--record);font-weight:700;border:1px solid var(--record);padding:3px 6px}
+.empty{margin:0;color:var(--muted);font-size:.92rem;font-weight:300}
+.legend{margin:8px 0 0;font-size:.76rem;color:var(--muted)}
+.legend b{color:var(--record)}
+
+/* Floating stop bar */
+.runbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:2px solid var(--run);
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  box-shadow:0 -6px 20px rgb(0 0 0 / .12)}
+.runbar-in{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.runbar .dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--run);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.runbar .rinfo{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.runbar .rt{font-size:.9rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.runbar .rg{font-size:.8rem;color:var(--sung);font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.runbar .rg:empty{display:none}
+.runbar .rc{font-size:1.6rem;font-variant-numeric:tabular-nums;font-weight:500;color:var(--run)}
+.runbar .go{background:var(--run)}
+.runbar .go .ic{clip-path:none;border-radius:2px}
+
+.foot{font-size:.82rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.foot .st{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.foot.ok .st{background:var(--run)}
+.foot.warn .st{background:var(--record)}
+
+.bottom{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.backup{display:flex;flex-direction:column;gap:6px}
+.bk-t{margin:0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bk-row{display:flex;flex-wrap:wrap;gap:8px}
+.bk{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:.88rem;cursor:pointer}
+.bk.upd{border-color:var(--accent);color:var(--accent);font-weight:700}
+.bk-msg{margin:0;font-size:.82rem;color:var(--muted)}
+.bk-msg:empty{display:none}
+.ver{margin:0;font-size:.74rem;color:var(--muted)}
+.ver:empty{display:none}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+button,label.bk{touch-action:manipulation}
+@media (min-width:700px){.prose{font-size:1.28rem}}
+@media (max-width:620px){
+  .reading{padding:16px}
+  .r-record{align-items:flex-start;text-align:left}
+  .clock{font-size:2.2rem}
+  .att{grid-template-columns:2.2em 1fr auto 2em;grid-template-areas:"n t w x" "n bar d x";row-gap:4px}
+  .att .n{grid-area:n}.att .t{grid-area:t}.att .bar{grid-area:bar}.att .w{grid-area:w;text-align:right}.att .d{grid-area:d;text-align:right}.att .del{grid-area:x}
+  .runbar .rc{font-size:1.3rem}
+  .runbar .go{padding:10px 16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .runbar .dot{animation:none}
+  .r-record.flash .val{animation:none}
+  details.text summary::before,.prose .w{transition:none}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Programa de Franz · Lesetraining</p>
+    <h1>Lese-<span class="rec">Rekorde</span></h1>
+    <p class="lede">Lee el texto en voz alta. Pulsa <b>Empezar</b> cuando comiences y <b>Parar</b> al terminar. Tu mejor tiempo queda como <b>marca</b>. Cuando vuelvas a leer, las palabras se pintan <span class="k">como en un karaoke</span> al ritmo de tu marca: ¡lee más rápido que los colores!</p>
+    <dl class="stats">
+      <div><dt>Lecturas con marca</dt><dd id="stRec">0 de 0</dd></div>
+      <div><dt>Intentos</dt><dd id="stAtt">0</dd></div>
+      <div><dt>Marcas superadas</dt><dd id="stBeat">0</dd></div>
+    </dl>
+  </header>
+
+  <div class="switch" role="tablist" aria-label="Programa" id="progs"></div>
+  <div class="weeks" role="tablist" aria-label="Semanas" id="weeks"></div>
+  <section class="list" id="list" aria-live="off"></section>
+
+  <footer class="bottom">
+    <p class="foot" id="foot"><span class="st"></span><span id="footText">Cargando los tiempos guardados…</span></p>
+    <button type="button" class="bk upd" id="updBtn" hidden>Hay lecturas nuevas: toca para actualizar</button>
+    <div class="backup" id="backup" hidden>
+      <p class="bk-t">Copia de seguridad de los tiempos</p>
+      <div class="bk-row">
+        <button type="button" class="bk" id="bkExport">Guardar copia</button>
+        <label class="bk" for="bkFile">Cargar copia</label>
+        <input type="file" id="bkFile" class="vh" accept="application/json,.json">
+      </div>
+      <p class="bk-msg" id="bkMsg" aria-live="polite"></p>
+    </div>
+    <p class="ver" id="ver"></p>
+  </footer>
+</div>
+
+<div class="runbar" id="runbar" hidden>
+  <div class="runbar-in">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="rinfo"><span class="rt" id="runTitle"></span><span class="rg" id="runGhost"></span></span>
+    <span class="rc" id="runClock">0:00,0</span>
+    <button class="go" id="runStop" type="button"><span class="ic" aria-hidden="true"></span>Parar</button>
+  </div>
+</div>
+
+<script>
+const PROGRAMS = [
+ {
+  "id": "g",
+  "name": "Camino al Gymnasium",
+  "sub": "Otoño 2026",
+  "weeks": [
+   {
+    "key": "1",
+    "label": "Semana 1",
+    "theme": "Independencia de México",
+    "readings": [
+     {
+      "id": "g1",
+      "title": "Mexikos Unabhängigkeitstag",
+      "kind": "Lesen und Schreiben",
+      "paras": [
+       "Am 16. September feiert Mexiko seinen Unabhängigkeitstag. An diesem Tag denken die Menschen an das Jahr 1810.",
+       "Vor langer Zeit gehörte Mexiko zu Spanien. Die Menschen in Mexiko waren nicht frei. Sie wollten selbst über ihr Land bestimmen.",
+       "In der Nacht läutete ein Priester eine Glocke. Er hieß Miguel Hidalgo. Mit einem lauten Ruf rief er die Menschen zusammen. Dieser Ruf heißt „El Grito“. So begann der Kampf um die Freiheit.",
+       "Der Kampf dauerte viele Jahre. Am Ende war Mexiko frei und wurde ein eigenes Land.",
+       "Heute feiern die Menschen jedes Jahr. In der Nacht vom 15. September ruft der Präsident „¡Viva México!“. Alle rufen mit. Es gibt Musik, Feuerwerk und gutes Essen. Überall sieht man die Farben grün, weiß und rot – die Farben der Flagge."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "2",
+    "label": "Semana 2",
+    "theme": "Skateboarding",
+    "readings": [
+     {
+      "id": "g2",
+      "title": "Skateboarding – Geschichte, Typen und coole Fakten",
+      "kind": "Lesen, Schreiben & Forschen",
+      "paras": [
+       "Das Skateboarding ist heute ein Sport, den Millionen Menschen auf der ganzen Welt lieben. Aber wie hat alles angefangen?",
+       "In den 1950er- und 1960er-Jahren wollten Surfer in Kalifornien (USA) auch dann „surfen“, wenn das Meer ruhig war. Deshalb bauten sie Bretter mit Rollen und fuhren damit auf der Straße. Man nannte das „sidewalk surfing“ – Surfen auf dem Gehweg.",
+       "Die ersten Boards waren einfach: ein Holzbrett mit Rädern von Rollschuhen. Später machte man die Rollen aus Kunststoff, und das Fahren wurde viel besser.",
+       "Ein wichtiger Moment kam am Ende der 1970er-Jahre. Ein junger Skater mit dem Spitznamen „Ollie“ (er hieß eigentlich Alan Gelfand) erfand einen Sprung, bei dem das Board ohne Hände in die Luft springt. Bis heute heißt dieser Trick „Ollie“. Wenig später zeigte Rodney Mullen, wie man den Ollie auch auf flachem Boden macht. Deshalb ist der Ollie die Basis für fast alle anderen Tricks.",
+       "Es gibt verschiedene Typen von Boards: Das normale Skateboard ist kurz und gut für Tricks. Ein Cruiser ist bequem zum Fahren in der Stadt. Ein Longboard ist lang und schnell und eignet sich gut für weite Strecken.",
+       "Skateboarding ist längst kein reines Hobby mehr: Seit den Olympischen Spielen 2020 in Tokio ist es sogar eine olympische Sportart."
+      ]
+     },
+     {
+      "id": "g2x",
+      "title": "Skateboarding auf der Weltkarte",
+      "kind": "Sachunterricht · Geografie · corta",
+      "paras": [
+       "Skateboarding wurde vor etwa 70 Jahren in Kalifornien (USA) erfunden. Lange war es nur ein Hobby. Im Jahr 2020 wurde es zum ersten Mal olympisch – bei den Spielen in Tokio (Japan). 2024 fuhren die Skater in Paris (Frankreich), und 2028 treffen sie sich in Los Angeles (USA) – in Kalifornien, dort wo alles begann!"
+      ]
+     }
+    ]
+   },
+   {
+    "key": "3",
+    "label": "Semana 3",
+    "theme": "Sistema escolar",
+    "readings": [
+     {
+      "id": "g3",
+      "title": "Welche Schule führt wohin?",
+      "kind": "Lesen und Schreiben",
+      "paras": [
+       "In Deutschland gehen alle Kinder zuerst in die Grundschule, von Klasse 1 bis 4. Danach geht es weiter – aber nicht alle auf dieselbe Schule.",
+       "Es gibt mehrere Schulformen. Das Gymnasium ist die Schule für Kinder, die gern viel lernen und später studieren möchten. Es führt zum Abitur. Die Realschule ist etwas praktischer. Die Gesamtschule ist eine Schule für alle: Dort sind alle Abschlüsse möglich, sogar das Abitur.",
+       "Das Abitur ist der höchste Schulabschluss. Mit dem Abitur darf man an der Universität studieren – zum Beispiel Ärztin, Ingenieur oder Lehrerin werden.",
+       "Franz geht auf eine Waldorfschule. Dort lernt man viel mit Kunst, Musik und mit den Händen, und am Anfang gibt es keine Noten. Auch die Waldorfschule kann zum Abitur führen."
+      ]
+     },
+     {
+      "id": "g3x",
+      "title": "Physik: Kräfte",
+      "kind": "Sachunterricht · Physik · corta",
+      "paras": [
+       "Eine Kraft ist ein Ziehen oder Drücken. Man kann Kräfte nicht sehen, aber man merkt sie überall.",
+       "Die Schwerkraft zieht alles nach unten. Deshalb fällt ein Ball auf den Boden.",
+       "Die Reibung bremst. Deshalb bleibt dein Skateboard irgendwann stehen."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "4",
+    "label": "Semana 4",
+    "theme": "Bundesländer",
+    "readings": [
+     {
+      "id": "g4",
+      "title": "Ein Land aus 16 Teilen",
+      "kind": "Lesen und Schreiben",
+      "paras": [
+       "Deutschland ist ein großes Land in der Mitte Europas. Es besteht aus 16 Bundesländern. Jedes Bundesland hat seine eigene Hauptstadt und etwas Besonderes.",
+       "Franz wohnt in Nordrhein-Westfalen (NRW). Die Hauptstadt von NRW ist Düsseldorf. In NRW wohnen die meisten Menschen – fast 18 Millionen!",
+       "Diese Woche besucht Franz Bayern im Südosten. Bayern ist das größte Bundesland. Seine Hauptstadt ist München. In Bayern gibt es hohe Berge: die Alpen.",
+       "Franz fährt nach Nürnberg, eine schöne alte Stadt in der Region Franken. Dort steht eine große Burg auf einem Hügel: die Kaiserburg. Berühmt sind auch die kleinen Nürnberger Bratwürste und der süße Lebkuchen. Im Winter gibt es dort einen der schönsten Weihnachtsmärkte der Welt: den Christkindlesmarkt.",
+       "In jedem Bundesland spricht man ein bisschen anders. In Franken klingt das Deutsch ganz besonders!"
+      ]
+     }
+    ]
+   },
+   {
+    "key": "5",
+    "label": "Semana 5",
+    "theme": "Nintendo",
+    "readings": [
+     {
+      "id": "g5d1",
+      "title": "Spielkarten aus Kyoto",
+      "kind": "Tag 1 · Lunes",
+      "paras": [
+       "Nintendo ist eine sehr alte Firma. Sie wurde am 23. September 1889 in Kyoto in Japan gegründet. Der Gründer hieß Fusajiro Yamauchi. Am Anfang stellte Nintendo keine Videospiele her, sondern Spielkarten. Diese Karten hießen Hanafuda. Sie waren mit bunten Blumen und Tieren bemalt. Viele Familien in Japan spielten damit.",
+       "Im Jahr 1949 wurde Hiroshi Yamauchi, der Urenkel des Gründers, der neue Chef. Er war noch sehr jung. Er wollte, dass Nintendo größer wird. Deshalb probierte er viele neue Ideen aus: Nintendo hatte eine Taxi-Firma und verkaufte sogar Instant-Reis. Doch die meisten Ideen hatten keinen Erfolg.",
+       "Dann kam ein junger Ingenieur: Gunpei Yokoi. Er reparierte eigentlich die Maschinen in der Fabrik. In seiner Freizeit baute er sich einen Arm, den man lang ausziehen konnte, um Dinge zu greifen. Eines Tages sah der Chef den Arm. Er sagte: „Mach daraus ein Spielzeug!“ So entstand 1966 die „Ultra Hand“. Sie wurde ein großer Erfolg.",
+       "1980 erfand Yokoi die „Game & Watch“. Das war ein kleines Spiel mit einem Bildschirm, nicht größer als eine Hand. Es war gleichzeitig eine Uhr. Die Idee kam ihm im Zug: Er sah einen Mann, der sich mit seinem Taschenrechner die Zeit vertrieb. Mit der Game & Watch begann Nintendos Weg zu den Videospielen."
+      ]
+     },
+     {
+      "id": "g5d2",
+      "title": "Von Donkey Kong bis zur Switch 2",
+      "kind": "Tag 2 · Martes",
+      "paras": [
+       "1981 kam das Spiel „Donkey Kong“ in die Spielhallen. Darin sprang ein kleiner Mann mit Mütze über rollende Fässer. Er hieß zuerst einfach „Jumpman“. Später bekam er einen richtigen Namen: Mario. Erfunden hat ihn Shigeru Miyamoto. Er ist bis heute der berühmteste Spiele-Erfinder von Nintendo.",
+       "1983 brachte Nintendo in Japan seine erste große Konsole heraus: das Famicom. In Europa und Amerika hieß sie NES. Jetzt konnte man zu Hause am Fernseher spielen. 1985 erschien „Super Mario Bros.“ – und Mario wurde auf der ganzen Welt bekannt.",
+       "1989 kam der Game Boy. Er war klein, grau und lief mit Batterien. Mit dem Spiel „Tetris“ wurde er ein Riesenerfolg, denn man konnte ihn überallhin mitnehmen. Danach folgten viele Konsolen: das Super Nintendo (1990), das Nintendo 64 (1996), der GameCube (2001) und der Nintendo DS mit zwei Bildschirmen (2004).",
+       "2006 kam die Wii. Bei der Wii bewegte man sich beim Spielen: Man schwang den Controller zum Beispiel wie einen Tennisschläger. Plötzlich spielten auch Eltern und Großeltern mit.",
+       "2017 erschien die Nintendo Switch. Man kann sie am Fernseher und auch unterwegs benutzen. Ende 2025 überholte sie den Nintendo DS und wurde Nintendos meistverkaufte Konsole aller Zeiten. Ihre Nachfolgerin, die Nintendo Switch 2, kam schon am 5. Juni 2025 in die Läden."
+      ]
+     },
+     {
+      "id": "g5d3",
+      "title": "Mario, Zelda, Pokémon & Co.",
+      "kind": "Tag 3 · Miércoles",
+      "paras": [
+       "Nintendo ist berühmt für seine Figuren. Die bekannteste ist Mario. Er ist ein Klempner mit roter Mütze und Schnurrbart. Zusammen mit seinem Bruder Luigi rettet er Prinzessin Peach vor dem bösen Bowser.",
+       "1986 erschien das erste Spiel „The Legend of Zelda“. Viele denken, der Held heißt Zelda – aber das stimmt nicht! Der Held heißt Link, und Zelda ist die Prinzessin. Link erforscht riesige Welten, löst Rätsel und kämpft mit Schwert und Schild. Shigeru Miyamoto hatte die Idee, weil er als Kind gern Wälder und Höhlen erkundete. 2026 wird Zelda 40 Jahre alt.",
+       "1996 kamen die ersten Pokémon-Spiele heraus. Die Idee hatte Satoshi Tajiri. Als Kind sammelte er gern Käfer und andere Insekten. In den Spielen fängt und sammelt man Pokémon und tauscht sie mit Freunden. Heute gibt es über 1000 verschiedene Pokémon.",
+       "Das meistverkaufte Spiel für die Switch ist „Mario Kart 8 Deluxe“. Es wurde über 71 Millionen Mal verkauft! Auf Platz zwei steht „Animal Crossing: New Horizons“ mit über 50 Millionen. Auf Platz drei kommt „Super Smash Bros. Ultimate“ mit über 38 Millionen. Auch die Switch 2 hat schon einen Hit: „Mario Kart World“ wurde in gut einem Jahr über 15 Millionen Mal verkauft."
+      ]
+     },
+     {
+      "id": "g5d4",
+      "title": "Wer spielt gegen Nintendo?",
+      "kind": "Tag 4 · Jueves",
+      "paras": [
+       "Nintendo ist nicht allein. Auch andere Firmen bauen Spielkonsolen und wollen, dass möglichst viele Menschen bei ihnen spielen. Man nennt sie Konkurrenten.",
+       "In den 1990er-Jahren war Sega aus Japan der größte Konkurrent. Segas Held war Sonic, ein blauer Igel, der blitzschnell rennt. Mario oder Sonic? Kinder auf der ganzen Welt stritten darüber, wer besser ist. Man nannte das den „Konsolenkrieg“. Seit 2001 baut Sega keine Konsolen mehr. Heute gibt es Sonic-Spiele sogar für Nintendo-Konsolen!",
+       "1994 kam Sony mit der PlayStation. Das Lustige ist: Am Anfang wollten Nintendo und Sony zusammen eine Konsole bauen. Doch die beiden Firmen wurden sich nicht einig. Also baute Sony seine eigene. Die PlayStation 2 ist bis heute die meistverkaufte Konsole der Welt – mit etwa 160 Millionen Stück.",
+       "2001 kam Microsoft aus den USA mit der Xbox dazu. Microsoft kennt man auch von Computerprogrammen wie Windows.",
+       "Nintendo macht oft etwas anders als die anderen. Sony und Microsoft bauen sehr starke Konsolen mit besonders schöner Grafik. Nintendo dagegen sucht lieber neue Arten zu spielen: zwei Bildschirme, Bewegung oder eine Konsole zum Mitnehmen. Gunpei Yokoi meinte: Man braucht nicht immer die neueste Technik – man braucht eine gute Idee. Heute gibt es noch mehr Konkurrenz: Viele Menschen spielen auf dem Handy oder am Computer."
+      ]
+     },
+     {
+      "id": "g5d5",
+      "title": "Rekorde, Kino und neue Spiele",
+      "kind": "Tag 5 · Viernes",
+      "paras": [
+       "Kyoto / Frankfurt. Bei Nintendo ist im Moment viel los. Hier sind die wichtigsten Nachrichten.",
+       {
+        "b": "Rekordstart für die Switch 2.",
+        "t": "Die Nintendo Switch 2 kam am 5. Juni 2025 in die Läden. In nur vier Tagen kauften Menschen auf der ganzen Welt 3,5 Millionen Stück. Keine andere Konsole wurde jemals so schnell verkauft! Bis Ende Juni 2026 waren es schon über 23 Millionen."
+       },
+       {
+        "b": "Die erste Switch ist die Nummer eins.",
+        "t": "Ende 2025 überholte die erste Switch den Nintendo DS. Mit über 156 Millionen verkauften Konsolen ist sie jetzt Nintendos erfolgreichste Konsole. Nur die PlayStation 2 von Sony wurde noch etwas öfter verkauft."
+       },
+       {
+        "b": "Mario erobert das Kino.",
+        "t": "Im April 2026 kam „Der Super Mario Galaxy Film“ in die Kinos. Er spielte weltweit über eine Milliarde Dollar ein. Er war der erste Film des Jahres 2026, der das geschafft hat."
+       },
+       {
+        "b": "Zelda wird 40.",
+        "t": "Im Februar 1986 erschien das erste Zelda-Spiel. Zum Geburtstag zeigte Nintendo im September 2026 eine eigene Zelda-Show im Internet. Und am 30. April 2027 kommt ein Zelda-Film mit echten Schauspielern ins Kino."
+       },
+       {
+        "b": "Neue Spiele.",
+        "t": "Am 22. Oktober 2026 erscheint „Nintendo Switch Sports Resort“. Im Januar 2027 folgt „Metroid: Ravenous“ und im Frühling 2027 „Kirby and the World Beyond“."
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "v",
+  "name": "Expedición de Verano",
+  "sub": "Verano 2026",
+  "weeks": [
+   {
+    "key": "1",
+    "label": "Semana 1",
+    "theme": "Despegue",
+    "readings": [
+     {
+      "id": "v1",
+      "title": "Die Reise beginnt",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "Heute beginnt die große Reise. Lina und ihre Familie packen die Koffer. Lina nimmt ihr Lieblingsbuch und eine warme Jacke mit. Ihr kleiner Bruder Max vergisst fast seine Zahnbürste. Die Mutter prüft die Liste noch einmal. Der Vater lädt die Taschen ins Auto. Alle sind aufgeregt und ein bisschen nervös. Lina fragt: „Wie weit ist die erste Station?“ Der Vater lacht und sagt: „Das ist eine Überraschung.“ Endlich starten sie die Reise. Die Sonne scheint und der Himmel ist blau. Lina schreibt den ersten Satz in ihr Reisetagebuch."
+      ]
+     },
+     {
+      "id": "u1a",
+      "title": "Der geheime Garten der Oma",
+      "kind": "Übungen · Woche 1",
+      "paras": [
+       "Mateo besuchte seine Oma jeden Sommer. Aber er war noch nie ganz hinten im Garten gewesen, hinter der alten Steinmauer. Eines Tages lief er seiner Katze hinterher und fand eine kleine Holztür, die zwischen den Pflanzen versteckt war. Vorsichtig drückte er sie auf. Dahinter lag ein Garten voller roter Tomaten, hoher Sonnenblumen und einer alten Schaukel aus Seil, die an einem Baum hing.",
+       "Seine Oma kam lächelnd näher. „Das war der Garten meiner Mutter“, sagte sie. „Hier habe ich gespielt, als ich so alt war wie du.“ Mateo setzte sich auf die Schaukel und dachte, dass er eines Tages auch seine eigenen Kinder an diesen Ort bringen würde."
+      ]
+     },
+     {
+      "id": "u1b",
+      "title": "Der Hund, der den Mond anbellte",
+      "kind": "Übungen · Woche 1",
+      "paras": [
+       "Jede Nacht setzte sich der Hund von Herrn Felipe in den Hof und bellte den Mond an. Die Nachbarn dachten, er sei verrückt. Aber Herr Felipe kannte die Wahrheit: Der Hund vermisste seinen früheren Besitzer, der nachts mit dem Schiff reiste. Eines Nachts kam der Besitzer zurück. Der Hund rannte zu ihm und wedelte mit dem Schwanz. Seitdem bellte er den Mond nie wieder an."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "2",
+    "label": "Semana 2",
+    "theme": "El bosque",
+    "readings": [
+     {
+      "id": "v2",
+      "title": "Ein Tag im Wald",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "Am Sonntag macht Opa mit Tom einen Spaziergang im Wald. Die Bäume sind hoch und grün. Tom hört Vögel singen und sieht ein Eichhörnchen. Das Eichhörnchen sammelt Nüsse für den Winter. Opa zeigt Tom verschiedene Blätter und erklärt ihre Namen. Plötzlich beginnt es leicht zu regnen. Sie suchen Schutz unter einem großen Baum. Nach dem Regen riecht der Wald frisch und sauber. Tom findet einen schönen Stein und steckt ihn in seine Tasche. Am Ende des Spaziergangs ist Tom müde, aber glücklich."
+      ]
+     },
+     {
+      "id": "u2",
+      "title": "Der kleine Igel im Garten",
+      "kind": "Übungen · Woche 2",
+      "paras": [
+       "Es war Herbst geworden. Jeden Abend raschelte es unter den Blättern im Garten von Lina. Eines Tages entdeckte sie einen kleinen Igel, der sich unter dem Apfelbaum versteckte. Der Igel suchte Käfer und Würmer, um sich einen Winterspeck anzufressen. „Bald wird es kalt“, erklärte Linas Oma. „Dann hält der Igel Winterschlaf, bis der Frühling kommt.“ Lina baute dem Igel aus Laub und Zweigen ein gemütliches Haus in einer ruhigen Ecke. Im Frühling war das Laubhaus leer – der Igel war aufgewacht und wieder unterwegs."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "3",
+    "label": "Semana 3",
+    "theme": "El río",
+    "readings": [
+     {
+      "id": "v3",
+      "title": "Das Abenteuer am Fluss",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "Am Montag geht die Expedition weiter zum Fluss. Das Wasser ist klar und kalt. Tom und seine Schwester Emma ziehen ihre Gummistiefel an. Sie suchen kleine Steine und Muscheln am Ufer. Ein Fisch schwimmt schnell unter einer Brücke. Emma möchte den Fisch fangen, aber er ist zu schnell. Plötzlich sehen sie ein Boot auf dem Wasser. Ein alter Mann fährt langsam vorbei und winkt. Tom winkt zurück und lacht. Am Ende bauen die Kinder eine kleine Brücke aus Stöcken. Der Fluss macht ein leises, schönes Geräusch."
+      ]
+     },
+     {
+      "id": "u3",
+      "title": "Der Berg, der Feuer spuckt",
+      "kind": "Übungen · Woche 3",
+      "paras": [
+       "Tief unter der Erde ist es so heiß, dass Gestein schmilzt. Diese glühende Masse heißt Magma. Manchmal steigt das Magma nach oben und sucht sich einen Weg durch einen Berg. Bricht der Vulkan aus, schießen Asche, Gase und glühendes Gestein aus dem Krater. Sobald das Magma an der Luft ist, nennt man es Lava. Die Lava fließt den Berg hinab und wird langsam hart. Nach vielen Ausbrüchen wächst der Vulkan immer höher. Der bekannteste Vulkan Europas ist der Ätna auf der Insel Sizilien in Italien."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "4",
+    "label": "Semana 4",
+    "theme": "La montaña",
+    "readings": [
+     {
+      "id": "v4",
+      "title": "Die Wanderung auf den Berg",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "Am Samstag wandert die Familie Klein auf einen hohen Berg. Der Weg ist steil, aber sehr schön. Anna trägt einen kleinen Rucksack mit Wasser und Brot. Ihr Opa geht langsam, aber er kennt jeden Weg. Nach einer Stunde sehen sie eine Hütte aus Holz. Dort machen sie eine Pause und essen einen Apfel. Von oben sieht man das ganze Tal und einen See. Der Wind ist kalt, aber die Sonne wärmt die Gesichter. Anna macht ein Foto für ihr Tagebuch. Auf dem Rückweg findet sie eine besondere Feder. Müde, aber stolz, kommen sie am Abend wieder zu Hause an."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "5",
+    "label": "Semana 5",
+    "theme": "El desierto",
+    "readings": [
+     {
+      "id": "v5",
+      "title": "Die Wüste",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "In der Wüste ist es sehr heiß und trocken. Sara reist mit einem kleinen Team durch den Sand. Es gibt fast keine Pflanzen, nur ein paar Kakteen. Am Tag tragen alle einen Hut gegen die Sonne. Nachts wird es plötzlich kalt, und Sara zieht eine warme Jacke an. Ein Kamel läuft langsam neben der Gruppe her. Es trägt Wasser und Essen für alle. Am Abend sehen sie tausend Sterne im Himmel. Niemand hat so viele Sterne vorher gesehen. Sara denkt: Die Wüste ist hart, aber auch wunderschön. Am nächsten Morgen geht die Reise weiter."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "6",
+    "label": "Semana 6",
+    "theme": "El castillo",
+    "readings": [
+     {
+      "id": "v6",
+      "title": "Das Schloss am Ende der Reise",
+      "kind": "Historia de la expedición",
+      "paras": [
+       "Endlich erreicht die Expedition das alte Schloss. Es steht auf einem Hügel und hat vier hohe Türme. Die Tore sind aus schwerem, dunklem Holz. Im Schlosshof wartet eine Überraschung: ein kleines Fest für alle Forscher. Es gibt Musik, Spiele und einen großen Kuchen. Der König (gespielt vom Großvater) übergibt jedem Kind eine goldene Medaille. Die Kinder erzählen sich Geschichten von der ganzen Reise: dem Wald, dem Fluss, dem Berg und der Wüste. Alle sind stolz auf das, was sie geschafft haben. Am Abend leuchten bunte Lichter im ganzen Schlosshof. Die Expedition ist zu Ende, aber niemand will, dass der Tag aufhört. Zum Schluss versprechen alle: Im nächsten Sommer kommt ein neues Abenteuer."
+      ]
+     }
+    ]
+   },
+   {
+    "key": "x",
+    "label": "Extra",
+    "theme": "Historias de muestra",
+    "readings": [
+     {
+      "id": "m1",
+      "title": "Der Geburtstag von Lina",
+      "kind": "Historia de muestra",
+      "paras": [
+       "Lina hat heute Geburtstag. Sie wird neun Jahre alt. Am Morgen bekommt sie ein neues Fahrrad von ihren Eltern. Das Fahrrad ist blau und hat einen großen Korb. Lina ist sehr glücklich und möchte sofort losfahren. Am Nachmittag kommen ihre Freunde zur Feier. Sie spielen im Garten und essen Kuchen mit Erdbeeren. Linas Mama backt jedes Jahr einen besonderen Kuchen. Am Abend zündet Lina die Kerzen an und wünscht sich etwas. Alle singen ein Geburtstagslied für sie. Es war ein wunderschöner Tag."
+      ]
+     },
+     {
+      "id": "m2",
+      "title": "Im Zoo",
+      "kind": "Historia de muestra",
+      "paras": [
+       "Am Samstag fährt Familie Müller in den Zoo. Die Kinder, Paul und Mia, sind sehr aufgeregt. Zuerst besuchen sie die Affen. Die Affen klettern schnell von Baum zu Baum. Danach gehen sie zu den Elefanten. Ein kleiner Elefant spielt mit Wasser. Paul findet die Löwen am spannendsten. Die Löwen schlafen fast den ganzen Tag. Mia mag lieber die bunten Vögel im großen Käfig. Zum Schluss kaufen sie ein Eis und setzen sich auf eine Bank. Es war ein toller Ausflug."
+      ]
+     }
+    ]
+   }
+  ]
+ }
+];
+const IS_APP = true;
+const APP_VERSION = "2026-10-16-7beff8";
+
+/* ---------- helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const WORDRE = /[0-9A-Za-zÀ-ÿ]/;
+const paraText = p => typeof p === "string" ? p : (p.b + " " + p.t);
+function fmt(ms) {
+  const tenths = Math.floor(ms / 100);
+  const m = Math.floor(tenths / 600), s = Math.floor((tenths % 600) / 10), d = tenths % 10;
+  return m + ":" + String(s).padStart(2, "0") + "," + d;
+}
+function fmtDiff(ms) {
+  ms = Math.abs(ms);
+  if (ms < 60000) return (Math.round(ms / 100) / 10).toFixed(1).replace(".", ",") + " s";
+  return fmt(ms) + " min";
+}
+const dec1 = x => (Math.round(x * 10) / 10).toFixed(1).replace(".", ",");
+const wpm = (words, ms) => Math.round(words / (ms / 60000));
+const dateFmt = new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short" });
+const timeFmt = new Intl.DateTimeFormat("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return dateFmt.format(d).replace(/\./g, "") + " · " + timeFmt.format(d);
+}
+const reduceMotion = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+
+/* Karaoke timing: each word gets a share of the record time by its length,
+   plus a short pause after commas and a longer one after . ! ? : ; */
+function pacing(paras) {
+  const ws = [];
+  paras.forEach(p => paraText(p).split(/\s+/).forEach(tok => {
+    if (!WORDRE.test(tok)) return;
+    let w = (tok.match(/[0-9A-Za-zÀ-ÿ]/g) || []).length + 3;
+    if (/[.!?:;][“”"»)]*$/.test(tok)) w += 5; else if (/[,–][“”"»)]*$/.test(tok)) w += 2;
+    ws.push(w);
+  }));
+  const tot = ws.reduce((a, b) => a + b, 0) || 1;
+  let c = 0;
+  return ws.map(w => (c += w) / tot);
+}
+
+/* ---------- readings: built-in weeks + weeks added later to the page's store ---------- */
+let EXTRA = [];             // week docs from the store (collection "semanas")
+let COMBINED = [];          // programs with merged weeks
+let READ = {}, TOTAL = 0;
+const weekOrder = k => /^\d+$/.test(k) ? Number(k) : 1e6;
+function cleanPara(p) {
+  if (typeof p === "string") return p.trim() ? p : null;
+  if (p && typeof p.b === "string" && typeof p.t === "string") return { b: p.b, t: p.t };
+  return null;
+}
+function cleanWeek(d) {
+  if (!d || !["g", "v"].includes(d.programa) || !/^[0-9]{1,3}$/.test(String(d.key)) || !Array.isArray(d.readings)) return null;
+  const readings = d.readings.map(r => {
+    if (!r || !/^[a-z0-9]{1,24}$/.test(String(r.id)) || typeof r.title !== "string" || !Array.isArray(r.paras)) return null;
+    const paras = r.paras.map(cleanPara).filter(Boolean);
+    return paras.length ? { id: String(r.id), title: r.title, kind: typeof r.kind === "string" ? r.kind : "Lesen und Schreiben", paras } : null;
+  }).filter(Boolean);
+  if (!readings.length) return null;
+  const key = String(Number(d.key));
+  return { prog: d.programa, key, label: typeof d.label === "string" ? d.label : "Semana " + key, theme: typeof d.theme === "string" ? d.theme : "", readings };
+}
+function buildIndex() {
+  COMBINED = PROGRAMS.map(p => {
+    const weeks = p.weeks.map(w => Object.assign({}, w));
+    EXTRA.filter(x => x.prog === p.id).forEach(x => {
+      const w = { key: x.key, label: x.label, theme: x.theme, readings: x.readings };
+      const i = weeks.findIndex(o => o.key === x.key);
+      if (i >= 0) weeks[i] = w; else weeks.push(w);
+    });
+    weeks.sort((a, b) => weekOrder(a.key) - weekOrder(b.key));
+    return Object.assign({}, p, { weeks });
+  });
+  READ = {}; TOTAL = 0;
+  COMBINED.forEach(p => p.weeks.forEach(w => w.readings.forEach(r => {
+    const cum = pacing(r.paras);
+    READ[r.id] = Object.assign({}, r, { cum, words: cum.length, prog: p.id, week: w.key, weekLabel: w.label });
+    TOTAL++;
+  })));
+}
+function signature() {
+  return COMBINED.map(p => p.id + p.weeks.map(w => w.key + ":" + w.readings.map(r => r.id + r.title.length + "/" + r.paras.map(x => paraText(x).length).join(".")).join(",")).join(";")).join("|");
+}
+
+/* ---------- state ---------- */
+let attempts = [];          // {id, lectura, ms, fecha, palabras}
+let mode = "loading";       // loading | db | local | readonly
+let db = null;
+let resolveReady; const storeReady = new Promise(r => (resolveReady = r));
+let running = LS.get("lr-running", null);   // {id, start}
+const verdicts = {};
+let prog = LS.get("lr-prog", "g");
+if (!PROGRAMS.some(p => p.id === prog)) prog = "g";
+let weekSel = LS.get("lr-week", null) || { g: null, v: "1" };
+let seenWeeks = LS.get("lr-seen-weeks", null);  // {"g:6": firstSeenMs}
+let pace = LS.get("lr-pace", 1);               // 1 = record pace, 0.95 = 5 % faster, 0 = off
+if (![1, 0.95, 0].includes(pace)) pace = 1;
+let kara = null;            // active karaoke {id, total, cum, words, idx, cur, start}
+
+/* ---------- static render ---------- */
+function tokensHTML(s, st) {
+  return s.split(/(\s+)/).map(tok => {
+    if (!tok) return "";
+    if (!tok.trim()) return " ";
+    return WORDRE.test(tok) ? `<span class="w" data-i="${st.i++}">${esc(tok)}</span>` : esc(tok);
+  }).join("");
+}
+function paraHTML(p, st) {
+  if (typeof p === "string") return `<p>${tokensHTML(p, st)}</p>`;
+  return `<p><strong>${tokensHTML(p.b, st)}</strong> ${tokensHTML(p.t, st)}</p>`;
+}
+function cardHTML(r) {
+  const st = { i: 0 };
+  return `<article class="reading" id="r-${r.id}" data-id="${r.id}" hidden>
+    <div class="r-head">
+      <div class="r-titles">
+        <p class="r-meta">${esc(r.weekLabel)} · ${esc(r.kind)} · ${r.words} palabras</p>
+        <h3 lang="de">${esc(r.title)}</h3>
+      </div>
+      <div class="r-record" data-role="record"><span class="lbl">Marca</span><span class="val">—</span><span class="sub">aún sin tiempo</span></div>
+    </div>
+    <div class="timer">
+      <output class="clock" data-role="clock">0:00,0</output>
+      <button class="go" type="button" data-act="toggle"><span class="ic" aria-hidden="true"></span><span data-role="golabel">Empezar</span></button>
+      <button class="cancel" type="button" data-act="cancel" hidden>Cancelar</button>
+      <p class="verdict" data-role="verdict" aria-live="polite"></p>
+      <div class="pace" data-role="pace"></div>
+    </div>
+    <details class="text">
+      <summary>Ver el texto</summary>
+      <div class="prose" lang="de">${r.paras.map(p => paraHTML(p, st)).join("")}</div>
+    </details>
+    <section class="log" data-role="log"></section>
+  </article>`;
+}
+let lastSig = "";
+function rebuildList(force) {
+  const sig = signature();
+  if (!force && sig === lastSig) return false;
+  lastSig = sig;
+  const open = new Set([...document.querySelectorAll("details.text[open]")].map(d => d.closest(".reading").dataset.id));
+  const last = {};
+  document.querySelectorAll(".reading").forEach(el => { if (el.dataset.last) last[el.dataset.id] = el.dataset.last; });
+  $("#list").innerHTML = COMBINED.map(p => p.weeks.map(w => w.readings.map(r => cardHTML(READ[r.id])).join("")).join("")).join("");
+  document.querySelectorAll(".reading").forEach(el => {
+    const id = el.dataset.id;
+    if (open.has(id)) $("details.text", el).open = true;
+    if (last[id]) el.dataset.last = last[id];
+  });
+  if (kara) { const el = document.getElementById("r-" + kara.id); if (el) { kara.words = el.querySelectorAll(".prose .w"); kara.idx = 0; kara.cur = -1; $("details.text", el).open = true; } else kara = null; }
+  return true;
+}
+function trackNewWeeks() {
+  const now = Date.now();
+  const first = !seenWeeks;
+  if (first) seenWeeks = {};
+  let newest = null;
+  COMBINED.forEach(p => p.weeks.forEach(w => {
+    const k = p.id + ":" + w.key;
+    if (!(k in seenWeeks)) {
+      seenWeeks[k] = first ? 0 : now;
+      if (!first && p.id === "g" && (!newest || weekOrder(w.key) > weekOrder(newest))) newest = w.key;
+    }
+  }));
+  LS.set("lr-seen-weeks", seenWeeks);
+  if (newest) { weekSel.g = newest; LS.set("lr-week", weekSel); }
+}
+function buildStatic() {
+  $("#progs").innerHTML = PROGRAMS.map(p =>
+    `<button role="tab" type="button" data-prog="${p.id}" aria-selected="${p.id === prog}">${esc(p.name)} <span>${esc(p.sub)}</span></button>`).join("");
+  $("#progs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-prog]"); if (!b) return;
+    prog = b.dataset.prog; LS.set("lr-prog", prog); renderNav();
+  });
+  $("#weeks").addEventListener("click", e => {
+    const b = e.target.closest("button[data-week]"); if (!b) return;
+    weekSel[prog] = b.dataset.week; LS.set("lr-week", weekSel); renderNav();
+  });
+  $("#list").addEventListener("click", onListClick);
+  $("#runStop").addEventListener("click", () => running && stopTimer(running.id));
+}
+
+/* ---------- navigation ---------- */
+function renderNav() {
+  document.querySelectorAll("#progs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.prog === prog)));
+  const P = COMBINED.find(p => p.id === prog);
+  if (!P.weeks.some(w => w.key === weekSel[prog])) weekSel[prog] = P.weeks[P.weeks.length - 1].key;
+  const week = 7 * 864e5;
+  $("#weeks").innerHTML = P.weeks.map(w => {
+    const done = w.readings.filter(r => byReading(r.id).length).length;
+    const n = w.readings.length;
+    const ts = seenWeeks && seenWeeks[prog + ":" + w.key];
+    const isNew = ts && Date.now() - ts < week;
+    return `<button class="week" role="tab" type="button" data-week="${w.key}" aria-selected="${w.key === weekSel[prog]}">
+      <span class="wl">${esc(w.label)}${isNew ? '<span class="new">nueva</span>' : ""}</span><span class="wt">${esc(w.theme)}</span>
+      <span class="wb${done === n ? " full" : ""}" title="Lecturas con marca">${done}/${n}</span></button>`;
+  }).join("");
+  document.querySelectorAll(".reading").forEach(el => {
+    const r = READ[el.dataset.id];
+    el.hidden = !(r && r.prog === prog && r.week === weekSel[prog]);
+  });
+}
+
+/* ---------- dynamic render ---------- */
+function byReading(id) {
+  return attempts.filter(a => a.lectura === id).sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+}
+function recordOf(id) {
+  let best = null;
+  byReading(id).forEach(a => { if (!best || a.ms < best.ms) best = a; });
+  return best;
+}
+function paceHTML(r, best) {
+  if (!best) return `<span class="pl">Karaoke</span><span>se activa cuando tengas tu primera marca.</span>`;
+  const opts = [[1, "Ritmo de mi marca"], [0.95, "Un poco más rápido (−5 %)"], [0, "Sin karaoke"]];
+  const isRun = running && running.id === r.id;
+  const total = best.ms * (pace || 1);
+  const info = pace ? `<span class="ps">${dec1(r.words / (total / 1000))} palabras por segundo · termina en ${fmt(total)}</span>` : "";
+  return `<span class="pl">Karaoke</span>` + opts.map(([v, l]) =>
+    `<button type="button" data-act="pace" data-pace="${v}" aria-pressed="${pace === v}"${isRun ? " disabled" : ""}>${l}</button>`).join("") + info;
+}
+function renderCard(id) {
+  const r = READ[id], el = document.getElementById("r-" + id); if (!r || !el) return;
+  const list = byReading(id);
+  const best = recordOf(id);
+  const recEl = $('[data-role="record"]', el);
+  recEl.classList.toggle("has", !!best);
+  $(".val", recEl).textContent = best ? fmt(best.ms) : "—";
+  $(".sub", recEl).textContent = best ? `${wpm(r.words, best.ms)} palabras/min` : "aún sin tiempo";
+  $('[data-role="pace"]', el).innerHTML = paceHTML(r, best);
+
+  let min = Infinity; const wasRec = new Set();
+  list.forEach(a => { if (a.ms < min) { min = a.ms; wasRec.add(a.id); } });
+  const maxMs = Math.max(...list.map(a => a.ms), 1);
+  const log = $('[data-role="log"]', el);
+  if (!list.length) {
+    log.innerHTML = `<h4>Mis tiempos</h4><p class="empty">Todavía no hay tiempos. Pulsa <b>Empezar</b> cuando empieces a leer en voz alta.</p>`;
+  } else {
+    const canDel = mode === "db" || mode === "local";
+    const rows = list.map((a, i) => ({ a, n: i + 1 })).reverse().map(({ a, n }) => {
+      const cls = best && a.id === best.id ? "is-record" : (wasRec.has(a.id) ? "was-record" : "");
+      return `<li class="att ${cls}">
+        <span class="n">#${n}</span>
+        <span class="t">${fmt(a.ms)}<span class="tag">Marca</span></span>
+        <span class="bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(a.ms / maxMs * 100))}%"></i></span>
+        <span class="w">${wpm(r.words, a.ms)} p/min</span>
+        <span class="d">${esc(fmtDate(a.fecha))}</span>
+        ${canDel ? `<button class="del" type="button" data-act="del" data-att="${esc(a.id)}" aria-label="Borrar este tiempo">×</button>` : `<span class="del"></span>`}
+      </li>`;
+    }).join("");
+    log.innerHTML = `<h4>Mis tiempos · ${list.length} ${list.length === 1 ? "intento" : "intentos"}</h4><ol>${rows}</ol>
+      <p class="legend">Barra más corta = más rápido. <b>Negrita y color</b> = tu marca actual; semi-negrita = marcas anteriores.</p>`;
+  }
+  const v = verdicts[id]; const vEl = $('[data-role="verdict"]', el);
+  vEl.className = "verdict" + (v ? " v-" + v.kind : ""); vEl.textContent = v ? v.text : "";
+}
+function renderStats() {
+  const ids = Object.keys(READ);
+  $("#stRec").textContent = `${ids.filter(id => byReading(id).length).length} de ${TOTAL}`;
+  $("#stAtt").textContent = attempts.filter(a => READ[a.lectura]).length;
+  let beats = 0;
+  ids.forEach(id => {
+    let min = Infinity, first = true;
+    byReading(id).forEach(a => { if (a.ms < min) { if (!first) beats++; min = a.ms; } first = false; });
+  });
+  $("#stBeat").textContent = beats;
+}
+function renderDynamic() {
+  Object.keys(READ).forEach(renderCard);
+  renderStats(); renderNav(); renderRunning();
+}
+function setFoot(kind, text) {
+  const f = $("#foot"); f.className = "foot " + kind; $("#footText").textContent = text;
+}
+
+/* ---------- karaoke ---------- */
+function clearKaraoke(id) {
+  const el = document.getElementById("r-" + id); if (!el) return;
+  el.querySelectorAll(".prose .w.sung, .prose .w.now").forEach(w => { w.classList.remove("sung", "now"); w.style.removeProperty("--p"); });
+}
+function startKaraoke(id, scroll) {
+  const best = recordOf(id), r = READ[id], el = document.getElementById("r-" + id);
+  if (!pace || !best || !r || !el || !running || running.id !== id) { kara = null; $("#runGhost").textContent = ""; return; }
+  clearKaraoke(id);
+  const det = $("details.text", el); det.open = true;
+  kara = { id, total: best.ms * pace, cum: r.cum, words: el.querySelectorAll(".prose .w"), idx: 0, cur: -1 };
+  if (scroll) {
+    const prose = $(".prose", el);
+    const top = prose.getBoundingClientRect().top - 110;
+    window.scrollBy({ top, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  requestAnimationFrame(karaokeFrame);
+}
+function ghostIndex(f, cum) {      // first word whose share ends after f
+  let lo = 0, hi = cum.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (cum[m] > f) hi = m; else lo = m + 1; }
+  return lo;
+}
+function karaokeFrame() {
+  if (!kara || !running || running.id !== kara.id) return;
+  const n = kara.words.length;
+  const f = (Date.now() - running.start) / kara.total;
+  const i = Math.min(ghostIndex(f, kara.cum), n);
+  while (kara.idx < i) { const w = kara.words[kara.idx]; w.classList.remove("now"); w.style.removeProperty("--p"); w.classList.add("sung"); kara.idx++; }
+  if (i < n) {
+    const w = kara.words[i];
+    const prev = i ? kara.cum[i - 1] : 0;
+    w.classList.add("now");
+    w.style.setProperty("--p", Math.max(0, Math.min(100, (f - prev) / (kara.cum[i] - prev) * 100)).toFixed(1) + "%");
+    if (kara.cur !== i) { kara.cur = i; follow(w); }
+    $("#runGhost").textContent = `Karaoke de tu marca: palabra ${i + 1} de ${n}`;
+    requestAnimationFrame(karaokeFrame);
+  } else {
+    $("#runGhost").textContent = "El karaoke de tu marca ya terminó: ¡sigue, tú puedes!";
+  }
+}
+function follow(w) {
+  const r = w.getBoundingClientRect();
+  const barH = $("#runbar").offsetHeight || 0;
+  if (r.bottom > window.innerHeight - barH - 24) window.scrollBy({ top: r.top - window.innerHeight * 0.35, behavior: reduceMotion ? "auto" : "smooth" });
+}
+
+/* ---------- timer ---------- */
+let tick = null, wakeLock = null;
+function renderRunning() {
+  document.querySelectorAll(".reading").forEach(el => {
+    const id = el.dataset.id, isMe = running && running.id === id;
+    el.classList.toggle("is-running", !!isMe);
+    $('[data-role="golabel"]', el).textContent = isMe ? "Parar" : "Empezar";
+    $('[data-act="toggle"]', el).disabled = !!running && !isMe;
+    $('[data-act="cancel"]', el).hidden = !isMe;
+    if (!isMe) $('[data-role="clock"]', el).textContent = el.dataset.last || "0:00,0";
+  });
+  const bar = $("#runbar");
+  bar.hidden = !running;
+  if (running && READ[running.id]) $("#runTitle").textContent = READ[running.id].title;
+  if (running && !tick) { tick = setInterval(updateClock, 100); updateClock(); }
+  else if (!running && tick) { clearInterval(tick); tick = null; }
+}
+function updateClock() {
+  if (!running) return;
+  const t = fmt(Date.now() - running.start);
+  const el = document.getElementById("r-" + running.id);
+  if (el) $('[data-role="clock"]', el).textContent = t;
+  $("#runClock").textContent = t;
+}
+async function lockScreen() {
+  try { if (navigator.wakeLock && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener?.("release", () => (wakeLock = null)); } } catch (e) { wakeLock = null; }
+}
+function unlockScreen() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && running) lockScreen(); });
+
+function startTimer(id) {
+  if (running) return;
+  if (mode === "readonly") { verdicts[id] = { kind: "info", text: "Con esta cuenta solo se pueden ver los tiempos, no guardar nuevos." }; renderCard(id); return; }
+  running = { id, start: Date.now() };
+  LS.set("lr-running", running);
+  delete verdicts[id];
+  const el = document.getElementById("r-" + id); delete el.dataset.last;
+  renderCard(id); renderRunning(); lockScreen();
+  startKaraoke(id, true);
+}
+function cancelTimer(id) {
+  if (!running || running.id !== id) return;
+  running = null; kara = null; LS.del("lr-running"); unlockScreen();
+  clearKaraoke(id); $("#runGhost").textContent = "";
+  verdicts[id] = { kind: "info", text: "Cancelado. No se guardó ningún tiempo." };
+  renderCard(id); renderRunning();
+}
+async function stopTimer(id) {
+  if (!running || running.id !== id) return;
+  const ms = Date.now() - running.start;
+  const k = kara && kara.id === id ? kara : null;
+  running = null; kara = null; LS.del("lr-running"); unlockScreen();
+  $("#runGhost").textContent = "";
+  const el = document.getElementById("r-" + id);
+  el.dataset.last = fmt(ms);
+  renderRunning();
+  if (ms < 5000) {
+    clearKaraoke(id);
+    verdicts[id] = { kind: "info", text: "Menos de 5 segundos: parece un toque sin querer, no se guardó." };
+    renderCard(id); return;
+  }
+  await storeReady;
+  const prev = recordOf(id);
+  const r = READ[id];
+  let v;
+  if (!prev) v = { kind: "first", text: `Primer tiempo: ${fmt(ms)} (${wpm(r.words, ms)} palabras/min). Esta es tu marca. La próxima vez el texto se pintará a este ritmo: ¡intenta ganarle!` };
+  else if (ms < prev.ms) {
+    let extra = "";
+    if (k) {
+      const at = Math.min(ghostIndex(ms / k.total, k.cum), r.words);
+      if (at < r.words) extra = ` El karaoke iba en la palabra ${at} de ${r.words}: le ganaste por ${r.words - at} ${r.words - at === 1 ? "palabra" : "palabras"}.`;
+    }
+    v = { kind: "record", text: `¡Nueva marca! ${fmtDiff(prev.ms - ms)} más rápido que tu marca anterior (${fmt(prev.ms)}).${extra}` };
+  }
+  else if (ms - prev.ms <= Math.max(3000, prev.ms * 0.05)) v = { kind: "near", text: `¡Casi! Te faltaron ${fmtDiff(ms - prev.ms)} para tu marca de ${fmt(prev.ms)}.` };
+  else v = { kind: "info", text: `${fmt(ms)} · tu marca sigue en ${fmt(prev.ms)}. Cada vuelta te hace leer con más fluidez.` };
+  verdicts[id] = v;
+  const rec = { lectura: id, ms, fecha: new Date().toISOString(), palabras: r.words };
+  try {
+    await saveAttempt(rec);
+  } catch (e) {
+    verdicts[id] = { kind: "info", text: `No se pudo guardar este tiempo (${fmt(ms)}). Anótalo en la hoja y vuelve a intentarlo más tarde.` };
+  }
+  renderDynamic();
+  if (v.kind === "record" || v.kind === "first") {
+    const rr = $('[data-role="record"]', el); rr.classList.remove("flash"); void rr.offsetWidth; rr.classList.add("flash");
+  }
+}
+
+/* ---------- list clicks ---------- */
+const pendingDel = {};
+function onListClick(e) {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const card = b.closest(".reading"); const id = card.dataset.id;
+  const act = b.dataset.act;
+  if (act === "toggle") { running && running.id === id ? stopTimer(id) : startTimer(id); }
+  else if (act === "cancel") cancelTimer(id);
+  else if (act === "pace") {
+    pace = Number(b.dataset.pace); LS.set("lr-pace", pace);
+    Object.keys(READ).forEach(renderCard);
+  }
+  else if (act === "del") {
+    const aid = b.dataset.att;
+    if (pendingDel[aid]) { clearTimeout(pendingDel[aid]); delete pendingDel[aid]; deleteAttempt(aid).then(() => renderDynamic()).catch(() => { verdicts[id] = { kind: "info", text: "No se pudo borrar ese tiempo." }; renderCard(id); }); return; }
+    b.textContent = "¿Borrar?"; b.classList.add("confirm");
+    pendingDel[aid] = setTimeout(() => { delete pendingDel[aid]; b.textContent = "×"; b.classList.remove("confirm"); }, 3500);
+  }
+}
+
+/* ---------- storage ---------- */
+async function saveAttempt(rec) {
+  if (mode === "db") {
+    try { await db.collection("intentos").add(rec); }
+    catch (e) {
+      if (e && e.code === "unavailable") { await new Promise(r => setTimeout(r, 600 + Math.random() * 800)); await db.collection("intentos").add(rec); }
+      else { if (e && e.code === "invalid_argument") { mode = "readonly"; setFoot("warn", "Esta cuenta puede ver los tiempos, pero no guardar nuevos."); } throw e; }
+    }
+  } else if (mode === "local") {
+    rec.id = "l" + Date.now().toString(36);
+    attempts.push(rec); LS.set("lr-local-attempts", attempts);
+  } else throw new Error("readonly");
+}
+async function deleteAttempt(aid) {
+  if (mode === "db") await db.doc("intentos/" + aid).delete();
+  else if (mode === "local") { attempts = attempts.filter(a => a.id !== aid); LS.set("lr-local-attempts", attempts); }
+}
+function applyWeeks() {
+  buildIndex();
+  const changed = rebuildList(false);
+  trackNewWeeks();
+  if (running && !READ[running.id]) { running = null; LS.del("lr-running"); }
+  if (changed) renderDynamic();
+}
+async function initStore() {
+  let cap = null;
+  try { cap = window.claude && typeof window.claude.use === "function" ? await window.claude.use("db") : null; } catch (e) { cap = null; }
+  if (!cap) {
+    mode = "local"; attempts = LS.get("lr-local-attempts", []);
+    if (running && !READ[running.id]) { running = null; LS.del("lr-running"); }
+    if (IS_APP) setFoot("ok", "Los tiempos se guardan en este iPad. Funciona también sin internet.");
+    else setFoot("warn", "Guardando los tiempos solo en este navegador.");
+    resolveReady(); renderDynamic();
+    if (running) startKaraoke(running.id, false);
+    return;
+  }
+  db = cap; mode = "db";
+  try {
+    const user = await window.claude.use("user");
+    if (user && typeof user.can === "function") { const c = await user.can("data.write"); if (c === false) mode = "readonly"; }
+  } catch (e) {}
+  db.collection("semanas").onSnapshot(snap => {
+    EXTRA = snap.docs.map(d => cleanWeek(d.data())).filter(Boolean);
+    applyWeeks();
+  }, () => {});
+  let first = true;
+  db.collection("intentos").onSnapshot(snap => {
+    attempts = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).filter(a => a && typeof a.ms === "number" && typeof a.lectura === "string");
+    setFoot(mode === "readonly" ? "warn" : "ok", mode === "readonly"
+      ? "Puedes ver los tiempos, pero esta cuenta no puede guardar nuevos."
+      : "Los tiempos se guardan con esta página y se ven desde cualquier dispositivo.");
+    renderDynamic();
+    if (first) { first = false; resolveReady(); if (running && !kara) startKaraoke(running.id, false); }
+  }, () => {
+    setFoot("warn", "Se perdió la conexión con los tiempos guardados. Recarga la página.");
+    resolveReady();
+  });
+}
+
+/* ---------- app (iPad, offline) ---------- */
+const bkMsg = t => { $("#bkMsg").textContent = t; };
+async function exportBackup() {
+  const data = { app: "lese-rekorde", formato: 1, exportado: new Date().toISOString(), intentos: attempts };
+  const name = `lese-rekorde-copia-${new Date().toISOString().slice(0, 10)}.json`;
+  const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
+  try {
+    const file = new File([blob], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Lese-Rekorde · copia" });
+      bkMsg("Copia lista. Guárdala en Archivos o mándala por correo.");
+      return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  bkMsg("Copia descargada.");
+}
+async function importBackup(e) {
+  const f = e.target.files && e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const list = Array.isArray(data) ? data : data && data.intentos;
+    if (!Array.isArray(list)) throw new Error("formato");
+    const have = new Set(attempts.map(a => a.lectura + "|" + a.fecha + "|" + a.ms));
+    let n = 0;
+    list.forEach(a => {
+      if (!a || typeof a.lectura !== "string" || typeof a.ms !== "number" || !(a.ms > 0) || typeof a.fecha !== "string") return;
+      const k = a.lectura + "|" + a.fecha + "|" + a.ms;
+      if (have.has(k)) return;
+      have.add(k);
+      attempts.push({ id: "i" + Date.now().toString(36) + "-" + n, lectura: a.lectura, ms: a.ms, fecha: a.fecha, palabras: a.palabras || 0 });
+      n++;
+    });
+    LS.set("lr-local-attempts", attempts); renderDynamic();
+    bkMsg(n ? `Se cargaron ${n} ${n === 1 ? "tiempo" : "tiempos"} de la copia.` : "La copia no tenía tiempos nuevos.");
+  } catch (err) { bkMsg("Ese archivo no es una copia de Lese-Rekorde."); }
+}
+function initApp() {
+  if (!IS_APP) return;
+  $("#backup").hidden = false;
+  $("#ver").textContent = `Versión ${APP_VERSION} · ${TOTAL} lecturas`;
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {}); } catch (e) {}
+  $("#bkExport").addEventListener("click", exportBackup);
+  $("#bkFile").addEventListener("change", importBackup);
+  if (!("serviceWorker" in navigator)) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  let reg = null, updateReady = false;
+  navigator.serviceWorker.register("sw.js").then(r => { reg = r; }).catch(() => {});
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) return;           // first install: nothing to refresh
+    updateReady = true;
+    $("#updBtn").hidden = false;
+  });
+  $("#updBtn").addEventListener("click", () => { if (!running) location.reload(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && updateReady && !running) location.reload();
+    if (document.visibilityState === "visible" && reg && navigator.onLine) reg.update().catch(() => {});
+  });
+}
+
+/* ---------- boot ---------- */
+buildIndex();
+if (!weekSel.g) weekSel.g = COMBINED[0].weeks[COMBINED[0].weeks.length - 1].key;
+buildStatic();
+rebuildList(true);
+trackNewWeeks();
+renderNav();
+Object.keys(READ).forEach(renderCard);
+renderStats();
+renderRunning();
+if (running) lockScreen();
+initStore();
+initApp();
+</script>
+
+</body>
+</html>
